@@ -3,10 +3,11 @@ project(lua LANGUAGES C VERSION 5.4.6)
 
 option(LUA_SUPPORT_DL "Support dynamic loading of compiled modules" OFF)
 option(LUA_BUILD_AS_CXX "Build lua as C++" OFF)
-option(LUA_ENABLE_SHARED "Build dynamic liblua" ON)
-option(LUA_ENABLE_TESTING "Build and run tests" ON)
+option(LUA_ENABLE_SHARED "Build dynamic liblua" OFF) # ON
+option(LUA_ENABLE_TESTING "Build and run tests" OFF) # ON
 
 enable_language(CXX)
+
 if(LUA_ENABLE_TESTING)
     enable_testing()
 endif()
@@ -18,11 +19,11 @@ else()
 endif()
 
 if(TOP_LEVEL)
-    option(LUA_BUILD_BINARY "Build lua binary" ON)
-    option(LUA_BUILD_COMPILER "Build luac compiler" ON)
+    option(LUA_BUILD_BINARY "Build lua binary" OFF) # ON
+    option(LUA_BUILD_COMPILER "Build luac compiler" OFF) # ON
 else()
     option(LUA_BUILD_BINARY "Build lua binary" OFF)
-    option(LUA_BUILD_COMPILER "Build luac compiler" ON)
+    option(LUA_BUILD_COMPILER "Build luac compiler" OFF) # ON
 endif()
 
 add_subdirectory(lua-${PROJECT_VERSION})
