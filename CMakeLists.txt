@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.28)
+cmake_minimum_required(VERSION 3.22)
 project(lua LANGUAGES C VERSION 5.4.6)
 
 option(LUA_SUPPORT_DL "Support dynamic loading of compiled modules" OFF)
