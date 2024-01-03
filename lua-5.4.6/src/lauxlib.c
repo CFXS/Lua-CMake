@@ -86,18 +86,35 @@ static int pushglobalfuncname(lua_State *L, lua_Debug *ar) {
     }
 }
 
-static void pushfuncname(lua_State *L, lua_Debug *ar) {
+// static void pushfuncname(lua_State *L, lua_Debug *ar) {
+//     if (pushglobalfuncname(L, ar)) { /* try first a global name */
+//         lua_pushfstring(L, "function '%s'", lua_tostring(L, -1));
+//         lua_remove(L, -2);                                     /* remove name */
+//     } else if (*ar->namewhat != '\0')                          /* is there a name from code? */
+//         lua_pushfstring(L, "%s '%s'", ar->namewhat, ar->name); /* use it */
+//     else if (*ar->what == 'm')                                 /* main? */
+//         lua_pushliteral(L, "main chunk");
+//     else if (*ar->what != 'C') /* for Lua functions, use <file:line> */
+//         lua_pushfstring(L, "function <%s:%d>", ar->short_src, ar->linedefined);
+//     else /* nothing left... */
+//         lua_pushliteral(L, "?");
+// }
+
+static char *getfuncname(lua_State *L, lua_Debug *ar) {
+    char *name = malloc(1024);
     if (pushglobalfuncname(L, ar)) { /* try first a global name */
-        lua_pushfstring(L, "function '%s'", lua_tostring(L, -1));
-        lua_remove(L, -2);                                     /* remove name */
-    } else if (*ar->namewhat != '\0')                          /* is there a name from code? */
-        lua_pushfstring(L, "%s '%s'", ar->namewhat, ar->name); /* use it */
-    else if (*ar->what == 'm')                                 /* main? */
-        lua_pushliteral(L, "main chunk");
+        snprintf(name, 1024, "(call %s)", lua_tostring(L, -1));
+        lua_remove(L, -2);            /* remove name */
+    } else if (*ar->namewhat != '\0') /* is there a name from code? */
+        snprintf(name, 1024, "(%s '%s')", ar->namewhat, ar->name);
+    else if (*ar->what == 'm') /* main? */
+        snprintf(name, 1024, "");
     else if (*ar->what != 'C') /* for Lua functions, use <file:line> */
-        lua_pushfstring(L, "function <%s:%d>", ar->short_src, ar->linedefined);
+        snprintf(name, 1024, "(C Function \"%s:%d\")", ar->short_src, ar->linedefined);
     else /* nothing left... */
-        lua_pushliteral(L, "?");
+        snprintf(name, 1024, "(?)");
+
+    return name;
 }
 
 static int lastlevel(lua_State *L) {
@@ -124,12 +141,13 @@ LUALIB_API void luaL_traceback(lua_State *L, lua_State *L1, const char *msg, int
     lua_Debug ar;
     int last = lastlevel(L1);
     // int limit2show = (last - level > LEVELS1 + LEVELS2) ? LEVELS1 : -1;
-    int limit2show = -1; // CFXS: MODIFIED
+    int limit2show = 1000; // CFXS: MODIFIED
     luaL_buffinit(L, &b);
     if (msg) {
         luaL_addstring(&b, msg);
         luaL_addchar(&b, '\n');
     }
+
     luaL_addstring(&b, "stack traceback:");
     while (lua_getstack(L1, level++, &ar)) {
         if (limit2show-- == 0) {                /* too many levels? */
@@ -139,13 +157,18 @@ LUALIB_API void luaL_traceback(lua_State *L, lua_State *L1, const char *msg, int
             level += n;        /* and skip to last levels */
         } else {
             lua_getinfo(L1, "Slnt", &ar);
-            if (ar.currentline <= 0)
-                lua_pushfstring(L, "\n\t%s: in ", ar.short_src);
-            else
-                lua_pushfstring(L, "\n\t%s:%d: in ", ar.short_src, ar.currentline);
+            if (ar.currentline <= 0) {
+                // CFXS: MODIFIED (do not print "[C]: in function 'fname'")
+                // lua_pushfstring(L, "\n\t%s: in ", ar.short_src);
+            } else {
+                // CFXS: MODIFIED (format (fname) instead of "in fname")
+                char *fname = getfuncname(L, &ar);
+                lua_pushfstring(L, "\n\t%s:%d %s", ar.short_src, ar.currentline, fname);
+                free(fname);
+            }
             luaL_addvalue(&b);
-            pushfuncname(L, &ar);
-            luaL_addvalue(&b);
+            // pushfuncname(L, &ar);
+            // luaL_addvalue(&b);
             if (ar.istailcall)
                 luaL_addstring(&b, "\n\t(...tail calls...)");
         }
