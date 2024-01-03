@@ -108,7 +108,8 @@ static char *getfuncname(lua_State *L, lua_Debug *ar) {
     } else if (*ar->namewhat != '\0') /* is there a name from code? */
         snprintf(name, 1024, "(%s '%s')", ar->namewhat, ar->name);
     else if (*ar->what == 'm') /* main? */
-        snprintf(name, 1024, "");
+        // snprintf(name, 1024, "");
+        name[0] = 0;
     else if (*ar->what != 'C') /* for Lua functions, use <file:line> */
         snprintf(name, 1024, "(C Function \"%s:%d\")", ar->short_src, ar->linedefined);
     else /* nothing left... */
